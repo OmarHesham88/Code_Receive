@@ -1,4 +1,5 @@
 import { fetchAllCodes } from "../../../../lib/imap.js";
+import { getCachedAllCodes } from "../../../../lib/imap-cache.js";
 import { verifyAdminSession } from "../../../../lib/admin-auth.js";
 
 export const runtime = "nodejs";
@@ -14,7 +15,7 @@ export async function GET(request) {
     return Response.json({ error: "Unauthorized." }, { status: 401 });
   }
   try {
-    const data = await fetchAllCodes();
+    const data = await getCachedAllCodes(fetchAllCodes);
     return Response.json({
       items: data.items || [],
       checkedAt: data.checkedAt || new Date().toISOString()

@@ -1,4 +1,5 @@
 import { fetchCodes } from "../../../lib/imap.js";
+import { getCachedCodes } from "../../../lib/imap-cache.js";
 
 export const runtime = "nodejs";
 
@@ -27,7 +28,7 @@ export async function GET(request) {
   }
 
   try {
-    const data = await fetchCodes(email);
+    const data = await getCachedCodes(email, fetchCodes);
     return Response.json({
       email,
       items: data.items || [],
