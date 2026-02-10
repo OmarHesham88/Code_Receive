@@ -1,6 +1,6 @@
-import { fetchAllCodes } from "../../../../lib/imap.js";
-import { getCachedAllCodes } from "../../../../lib/imap-cache.js";
-import { verifyAdminSession } from "../../../../lib/admin-auth.js";
+import { prisma } from "@/lib/db";
+import { startSyncLoop } from "@/lib/sync";
+import { verifyAdminSession } from "@/lib/admin-auth";
 
 export const runtime = "nodejs";
 
@@ -11,18 +11,40 @@ export async function GET(request) {
     .map((value) => value.trim())
     .find((value) => value.startsWith("admin_session="));
   const sessionValue = sessionCookie ? sessionCookie.split("=")[1] : "";
-  if (!verifyAdminSession(sessionValue)) {
+
+  if (!(await verifyAdminSession(sessionValue))) {
     return Response.json({ error: "Unauthorized." }, { status: 401 });
   }
+
+  // Ensure background sync is running (idempotent)
+  startSyncLoop();
+
   try {
-    const data = await getCachedAllCodes(fetchAllCodes);
+    const codes = await prisma.code.findMany({
+      where: {
+        receivedAt: {
+          gt: new Date(Date.now() - 60 * 60 * 1000) // Last 60 minutes for admin
+        }
+      },
+      orderBy: {
+        receivedAt: "desc"
+      },
+      take: 100
+    });
+
     return Response.json({
-      items: data.items || [],
-      checkedAt: data.checkedAt || new Date().toISOString()
+      items: codes.map(c => ({
+        code: c.code, // Admin sees raw codes
+        from: c.from,
+        to: c.email,
+        timestamp: Math.floor(c.receivedAt.getTime() / 1000),
+        time: c.receivedAt.toISOString(),
+        isProtected: c.isProtected
+      })),
+      checkedAt: new Date().toISOString()
     });
   } catch (error) {
-    const message = error?.message || "IMAP login failed. Check IMAP credentials.";
-    const status = message.toLowerCase().includes("missing imap credentials") ? 401 : 500;
-    return Response.json({ error: message }, { status });
+    console.error("Database error:", error);
+    return Response.json({ error: "Database error" }, { status: 500 });
   }
 }

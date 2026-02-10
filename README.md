@@ -1,34 +1,54 @@
-# Email Code Retriever (PHP + Gmail IMAP)
+# Code Receive - Email Verification Dashboard
 
-This app searches a single authorized Gmail inbox (example: `servicehub000@gmail.com`)
-and extracts verification codes from messages received in the last 5 minutes.
+This is a **Next.js** application that monitors a Gmail inbox for verification codes and displays them in a real-time dashboard.
+
+## Features
+
+- **Real-time Monitoring**: Automatically fetches verification codes from emails.
+- **Secure Architecture**: Uses a local SQLite database to store codes, preventing IMAP rate limits.
+- **Privacy Focused**: "Protected" codes (e.g., password resets) can be masked.
+- **Multi-language Support**: English and Arabic UI.
 
 ## Requirements
 
-- PHP 8.1+
-- PHP IMAP extension enabled
+- Node.js 18+
+- A Gmail account with 2-Step Verification enabled and an App Password.
 
-## Setup (IMAP + App Password)
+## Setup
 
-1. Enable 2-Step Verification on the Gmail account.
-2. Create an App Password (Google Account → Security → App passwords).
-3. Copy `.env.example` to `.env` and fill in your credentials.
-4. Set `AUTHORIZED_INBOX=servicehub000@gmail.com` in `.env` to lock access to that inbox.
-5. Optionally set `LOOKBACK_MINUTES=500` to control how far back to search.
-6. Set `LOCK_PASSWORDS=secret1,secret2` to protect flagged codes.
-7. If you archive mail, set `IMAP_MAILBOX` to a mailbox from `tools/imap_list.php`.
+1.  **Install Dependencies**:
+    ```bash
+    npm install
+    ```
 
-## Run
+2.  **Configure Environment**:
+    Copy `.env.example` to `.env` and fill in your details:
+    ```bash
+    cp .env.example .env
+    ```
+    - `IMAP_USER`: Your Gmail address.
+    - `IMAP_PASSWORD`: Your App Password (not your login password).
+    - `AUTHORIZED_INBOX`: The email address allowed to access the dashboard (usually same as IMAP_USER).
+    - `ADMIN_PASSWORDS`: Comma-separated list of admin passwords.
 
-```bash
-php -S localhost:8000 -t public
-```
+3.  **Initialize Database**:
+    ```bash
+    npx prisma db push
+    ```
 
-Open `http://localhost:8000` after setting your IMAP credentials.
+4.  **Run the App**:
+    ```bash
+    npm run dev
+    ```
+    Open [http://localhost:3000](http://localhost:3000).
 
-## How it works
+## Architecture
 
-- The app searches the Gmail inbox using IMAP.
-- It filters to emails sent to the specified recipient address.
-- It extracts 6-digit or 5-5 alphanumeric codes (within `LOOKBACK_MINUTES`).
-- If a message contains “reset code” or has `background-color: #f3f3f3` in HTML, its codes are protected.
+- **Frontend**: Next.js (React)
+- **Backend**: Next.js API Routes
+- **Database**: SQLite (via Prisma)
+- **Email Fetching**: `imapflow` + `mailparser` (Background Sync)
+
+## License
+
+ISC

@@ -6,10 +6,10 @@ const MESSAGES = {
   en: {
     badge: "Made By ServiceHub",
     title: "Email Code Receiver :)",
-    subtitle: "Get Code From last 5 munites For ChatGPT & Other Services",
+    subtitle: "Get Code From last 5 minutes For ChatGPT & Other Services",
     cardTitle: "Get Your Verification Code",
     cardSubtitle: "Add Your Mail to get Code",
-    notice: "Valid for 5-8 munites only",
+    notice: "Valid for 5-8 minutes only",
     labelEmail: "Recipient Email Address",
     placeholderEmail: "user@example.com",
     statusChecking: "Checking IMAP credentials...",
@@ -21,10 +21,18 @@ const MESSAGES = {
     statusSuccess: "Codes retrieved.",
     statusServerError: "Unable to reach the server.",
     resultsTitle: "Results",
+    checkedAtLabel: "Checked at",
     emptyDefault: "Enter an email to search in the Gmail inbox you authorized.",
     emptyNoCodes: "No codes found in the lookback window.",
     footer: "Thank you for Using our Service :)",
-    langLabel: "العربية"
+    langLabel: "العربية",
+    minutesAgo: (n) => `${n} minutes ago`,
+    unknownTime: "Unknown time",
+    unknownSender: "Unknown sender",
+    whatsappLabel: "WhatsApp",
+    whatsappAria: "Contact via WhatsApp",
+    copyBtn: "Copy",
+    copiedBtn: "Copied!",
   },
   ar: {
     badge: "صنع بواسطة ServiceHub",
@@ -44,11 +52,19 @@ const MESSAGES = {
     statusSuccess: "تم جلب الرموز.",
     statusServerError: "تعذر الاتصال بالخادم.",
     resultsTitle: "النتائج",
+    checkedAtLabel: "تم الفحص في",
     emptyDefault: "أدخل بريدًا للبحث داخل صندوق البريد المصرح به.",
     emptyNoCodes: "لا توجد رموز ضمن المدة المحددة.",
     footer: "شكرًا لاستخدام خدمتنا :)",
-    langLabel: "English"
-  }
+    langLabel: "English",
+    minutesAgo: (n) => `منذ ${n} دقيقة`,
+    unknownTime: "وقت غير معروف",
+    unknownSender: "مرسل غير معروف",
+    whatsappLabel: "واتساب",
+    whatsappAria: "تواصل عبر واتساب",
+    copyBtn: "نسخ",
+    copiedBtn: "تم النسخ!",
+  },
 };
 
 function formatCheckedAt(value, locale) {
@@ -96,16 +112,26 @@ export default function HomePage() {
   const [checkedAt, setCheckedAt] = useState("");
   const [items, setItems] = useState([]);
   const [emptyMessage, setEmptyMessage] = useState(MESSAGES.en.emptyDefault);
+  const [copiedIndex, setCopiedIndex] = useState(null);
   const pollRef = useRef(null);
   const latestItemsRef = useRef([]);
   const currentLang = MESSAGES[lang] || MESSAGES.en;
-  const locale = lang === "ar" ? "ar" : "en";
+  const locale = lang === "ar" ? "ar-EG" : "en-US";
+  const isRTL = lang === "ar";
 
+  // Re-translate the status message whenever the language switches
   useEffect(() => {
-    if (status === MESSAGES.en.statusChecking || status === MESSAGES.ar.statusChecking) {
-      setStatus(currentLang.statusChecking);
+    const statusKeys = [
+      "statusChecking", "statusReady", "statusNotReady", "statusAuthFail",
+      "statusSearching", "statusWaiting", "statusSuccess", "statusServerError",
+    ];
+    for (const key of statusKeys) {
+      if (status === MESSAGES.en[key] || status === MESSAGES.ar[key]) {
+        setStatus(currentLang[key]);
+        return;
+      }
     }
-  }, [currentLang.statusChecking, status]);
+  }, [lang]);
 
   const statusClass = useMemo(() => {
     if (!statusType) {
@@ -125,10 +151,10 @@ export default function HomePage() {
         }
         if (data.authenticated) {
           setStatusType("success");
-          setStatus(data.message || currentLang.statusReady);
+          setStatus(currentLang.statusReady);
         } else {
           setStatusType("error");
-          setStatus(data.message || currentLang.statusNotReady);
+          setStatus(currentLang.statusNotReady);
         }
       } catch {
         if (!isMounted) {
@@ -143,14 +169,18 @@ export default function HomePage() {
     return () => {
       isMounted = false;
     };
-  }, [currentLang.statusAuthFail, currentLang.statusNotReady, currentLang.statusReady]);
+  }, [
+    currentLang.statusAuthFail,
+    currentLang.statusNotReady,
+    currentLang.statusReady,
+  ]);
 
   function updateItems(data) {
-      const sortedItems = (data.items || [])
-        .slice()
-        .sort((a, b) => itemTimestamp(b) - itemTimestamp(a));
-      latestItemsRef.current = sortedItems;
-      setItems(sortedItems);
+    const sortedItems = (data.items || [])
+      .slice()
+      .sort((a, b) => itemTimestamp(b) - itemTimestamp(a));
+    latestItemsRef.current = sortedItems;
+    setItems(sortedItems);
     if (!sortedItems.length) {
       setEmptyMessage(currentLang.emptyNoCodes);
     }
@@ -220,16 +250,25 @@ export default function HomePage() {
 
   useEffect(() => {
     setEmptyMessage((message) =>
-      message === MESSAGES.en.emptyDefault || message === MESSAGES.ar.emptyDefault
+      message === MESSAGES.en.emptyDefault ||
+        message === MESSAGES.ar.emptyDefault
         ? currentLang.emptyDefault
-        : message === MESSAGES.en.emptyNoCodes || message === MESSAGES.ar.emptyNoCodes
+        : message === MESSAGES.en.emptyNoCodes ||
+          message === MESSAGES.ar.emptyNoCodes
           ? currentLang.emptyNoCodes
           : message
     );
   }, [currentLang.emptyDefault, currentLang.emptyNoCodes]);
 
+  function handleCopy(code, index) {
+    navigator.clipboard.writeText(code).then(() => {
+      setCopiedIndex(index);
+      setTimeout(() => setCopiedIndex(null), 1500);
+    });
+  }
+
   return (
-    <div dir={lang === "ar" ? "rtl" : "ltr"}>
+    <div className={isRTL ? "app-rtl" : "app-ltr"} dir={isRTL ? "rtl" : "ltr"}>
       <div className="ambient">
         <div className="halo"></div>
         <div className="ribbon"></div>
@@ -244,6 +283,7 @@ export default function HomePage() {
               className="lang-toggle"
               onClick={() => setLang((prev) => (prev === "en" ? "ar" : "en"))}
             >
+              <span className="lang-toggle-icon">🌐</span>
               {currentLang.langLabel}
             </button>
           </div>
@@ -256,7 +296,10 @@ export default function HomePage() {
             <div>
               <h2>{currentLang.cardTitle}</h2>
               <p>{currentLang.cardSubtitle}</p>
-              <p className="notice">{currentLang.notice}</p>
+              <p className="notice">
+                <span className="notice-icon">⏱</span>
+                {currentLang.notice}
+              </p>
             </div>
           </div>
 
@@ -266,6 +309,7 @@ export default function HomePage() {
               id="email"
               name="email"
               type="email"
+              dir="ltr"
               placeholder={currentLang.placeholderEmail}
               required
               value={email}
@@ -277,28 +321,45 @@ export default function HomePage() {
           <div className="results">
             <div className="results-header">
               <span>{currentLang.resultsTitle}</span>
-              <span>{checkedAt ? `${lang === "ar" ? "تم الفحص في" : "Checked at"} ${formatCheckedAt(checkedAt, locale)}` : ""}</span>
+              <span>
+                {checkedAt
+                  ? `${currentLang.checkedAtLabel} ${formatCheckedAt(checkedAt, locale)}`
+                  : ""}
+              </span>
             </div>
             <div className="result-content">
               {items.length === 0 ? (
-                <div>{emptyMessage}</div>
+                <div className="empty-state">
+                  <span className="empty-icon">📬</span>
+                  <span>{emptyMessage}</span>
+                </div>
               ) : (
                 <div className="result-list">
                   {items.map((item, index) => (
                     <div className="result-row" key={`${item.code}-${index}`}>
                       <div className="result-meta">
-                        {item.time ? (
-                          <span title={new Date(item.time).toLocaleString(locale)}>
-                            {lang === "ar"
-                              ? `منذ ${minutesAgo(item.time) ?? 0} دقيقة`
-                              : `${minutesAgo(item.time) ?? 0} minutes ago`}
-                          </span>
-                        ) : (
-                          <span>{lang === "ar" ? "وقت غير معروف" : "Unknown time"}</span>
-                        )}{" "}
-                        | {item.from || (lang === "ar" ? "مرسل غير معروف" : "Unknown sender")}
+                        <span className="result-meta-time">
+                          {item.time
+                            ? currentLang.minutesAgo(minutesAgo(item.time) ?? 0)
+                            : currentLang.unknownTime}
+                        </span>
+                        <span className="result-meta-divider">|</span>
+                        <span className="result-meta-sender">
+                          {item.from || currentLang.unknownSender}
+                        </span>
                       </div>
-                      <div className="result-code">{item.code}</div>
+                      <div className="result-code-row">
+                        <div className="result-code" dir="ltr">{item.code}</div>
+                        <button
+                          type="button"
+                          className="copy-btn"
+                          onClick={() => handleCopy(item.code, index)}
+                        >
+                          {copiedIndex === index
+                            ? currentLang.copiedBtn
+                            : currentLang.copyBtn}
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -315,7 +376,7 @@ export default function HomePage() {
         href="https://wa.me/201023684687"
         target="_blank"
         rel="noreferrer"
-        aria-label={lang === "ar" ? "تواصل عبر واتساب" : "Contact via WhatsApp"}
+        aria-label={currentLang.whatsappAria}
       >
         <span className="whatsapp-icon" aria-hidden="true">
           <svg viewBox="0 0 32 32" role="img" aria-hidden="true">
@@ -325,7 +386,7 @@ export default function HomePage() {
             />
           </svg>
         </span>
-        <span className="whatsapp-text">{lang === "ar" ? "واتساب" : "WhatsApp"}</span>
+        <span className="whatsapp-text">{currentLang.whatsappLabel}</span>
       </a>
     </div>
   );

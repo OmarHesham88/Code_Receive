@@ -1,13 +1,20 @@
 :root {
   color-scheme: light;
   --ink: #0f172a;
+  --ink-soft: #1e293b;
   --muted: #5f6b7a;
   --primary: #1f4bff;
   --primary-dark: #1736c0;
+  --primary-glow: rgba(31, 75, 255, 0.15);
   --accent: #ff7a59;
   --card: #ffffff;
   --surface: #f6f7fb;
   --shadow: 0 30px 70px rgba(13, 38, 76, 0.12);
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 24px;
+  --radius-full: 999px;
+  --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 * {
@@ -23,6 +30,20 @@ body {
   overflow-x: hidden;
 }
 
+/* ── Arabic font override ── */
+.app-rtl,
+.app-rtl input,
+.app-rtl button,
+.app-rtl label {
+  font-family: "IBM Plex Sans Arabic", "Noto Sans Arabic", "Segoe UI", sans-serif;
+}
+
+.app-rtl .result-meta,
+.app-rtl .result-code {
+  font-family: "IBM Plex Sans Arabic", "Noto Sans Arabic", "Segoe UI", sans-serif;
+}
+
+/* ── Ambient background ── */
 .ambient {
   position: fixed;
   inset: 0;
@@ -54,6 +75,7 @@ body {
   filter: blur(12px);
 }
 
+/* ── Page layout ── */
 .page {
   position: relative;
   z-index: 1;
@@ -64,10 +86,11 @@ body {
   gap: 32px;
 }
 
+/* ── Hero ── */
 .hero {
   text-align: center;
   display: grid;
-  gap: 12px;
+  gap: 14px;
 }
 
 .hero-top {
@@ -80,12 +103,15 @@ body {
 .badge {
   margin: 0 auto;
   padding: 6px 14px;
-  border-radius: 999px;
-  background: rgba(31, 75, 255, 0.1);
+  border-radius: var(--radius-full);
+  background: var(--primary-glow);
   color: var(--primary);
   font-weight: 600;
   font-size: 0.85rem;
   letter-spacing: 0.04em;
+}
+
+.app-ltr .badge {
   text-transform: uppercase;
 }
 
@@ -94,6 +120,14 @@ h1 {
   font-size: clamp(2.4rem, 4vw, 3.4rem);
   font-weight: 700;
   letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--ink) 0%, var(--primary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.app-rtl h1 {
+  letter-spacing: 0;
 }
 
 .hero p {
@@ -101,15 +135,18 @@ h1 {
   max-width: 520px;
   color: var(--muted);
   font-size: 1.05rem;
+  line-height: 1.6;
 }
 
+/* ── Card ── */
 .card {
   background: var(--card);
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   padding: 32px;
   box-shadow: var(--shadow);
   display: grid;
   gap: 28px;
+  border: 1px solid rgba(15, 23, 42, 0.04);
 }
 
 .card-header {
@@ -128,18 +165,28 @@ h1 {
 .card-header p {
   margin: 8px 0 0;
   color: var(--muted);
+  line-height: 1.5;
 }
 
+/* ── Notice badge ── */
 .notice {
   margin-top: 10px;
-  padding: 8px 12px;
-  background: rgba(127, 255, 212, 0.35);
-  color: #0f172a;
-  border-radius: 12px;
+  padding: 8px 14px;
+  background: linear-gradient(135deg, rgba(52, 211, 153, 0.2), rgba(16, 185, 129, 0.12));
+  color: #047857;
+  border-radius: var(--radius-md);
   font-weight: 600;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.92rem;
 }
 
+.notice-icon {
+  font-size: 1rem;
+}
+
+/* ── Form ── */
 .form {
   display: grid;
   gap: 12px;
@@ -147,17 +194,24 @@ h1 {
 
 label {
   font-weight: 600;
-  color: var(--ink);
+  color: var(--ink-soft);
+  font-size: 0.95rem;
 }
 
 input {
   padding: 14px 16px;
   border: 1px solid #dde3ef;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   font-size: 1rem;
   background: #fbfcff;
   outline: none;
-  transition: border 0.2s ease, box-shadow 0.2s ease;
+  transition: border var(--transition), box-shadow var(--transition);
+}
+
+/* Email input always LTR */
+input[type="email"] {
+  direction: ltr;
+  text-align: left;
 }
 
 input:focus {
@@ -165,14 +219,22 @@ input:focus {
   box-shadow: 0 0 0 4px rgba(31, 75, 255, 0.12);
 }
 
+/* ── Status indicator ── */
 .status {
-  padding: 10px 12px;
-  border-radius: 10px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
   background: #f3f5f9;
   color: var(--muted);
   font-size: 0.95rem;
   border: 1px solid rgba(15, 23, 42, 0.08);
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  direction: ltr;
+  text-align: left;
+}
+
+.app-rtl .status {
+  direction: rtl;
+  text-align: right;
 }
 
 .status.error {
@@ -187,15 +249,16 @@ input:focus {
   border-color: rgba(15, 123, 60, 0.2);
 }
 
+/* ── Buttons ── */
 .primary-button,
 .ghost-button {
   border: none;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 12px 20px;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  transition: transform var(--transition), box-shadow var(--transition), background var(--transition);
 }
 
 .primary-button {
@@ -209,20 +272,31 @@ input:focus {
   transform: translateY(-1px);
 }
 
+/* ── Language toggle ── */
 .lang-toggle {
   border: 1px solid rgba(31, 75, 255, 0.2);
-  background: white;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
   color: var(--primary);
-  border-radius: 999px;
-  padding: 8px 14px;
+  border-radius: var(--radius-full);
+  padding: 8px 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: transform var(--transition), box-shadow var(--transition), background var(--transition);
+  z-index: 5;
 }
 
 .lang-toggle:hover {
   background: rgba(31, 75, 255, 0.08);
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(31, 75, 255, 0.12);
+}
+
+.lang-toggle-icon {
+  font-size: 1.1rem;
 }
 
 .ghost-button {
@@ -235,6 +309,7 @@ input:focus {
   background: rgba(31, 75, 255, 0.08);
 }
 
+/* ── Results section ── */
 .results {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(246, 247, 251, 0.9));
   border-radius: 18px;
@@ -252,9 +327,24 @@ input:focus {
 }
 
 .result-content {
-  font-family: "Crimson Text", "Times New Roman", serif;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   color: var(--ink);
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px 12px;
+  color: var(--muted);
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+.empty-icon {
+  font-size: 2rem;
+  opacity: 0.6;
 }
 
 .result-list {
@@ -263,46 +353,83 @@ input:focus {
 }
 
 .result-row {
-  padding: 12px 16px;
-  border-radius: 14px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
   background: linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%);
   border: 1px solid rgba(15, 23, 42, 0.08);
-  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.06);
   display: grid;
-  gap: 8px;
+  gap: 10px;
+  animation: slideIn 0.3s ease-out;
 }
 
 .result-meta {
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   color: var(--muted);
   font-family: "Space Grotesk", "Segoe UI", sans-serif;
   letter-spacing: 0.01em;
   background: rgba(15, 23, 42, 0.04);
-  padding: 6px 10px;
-  border-radius: 10px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.result-meta-divider {
+  opacity: 0.4;
+}
+
+.result-meta-sender {
+  direction: ltr;
+}
+
+.result-code-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .result-code {
   font-weight: 700;
   letter-spacing: 0.22em;
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   color: #111827;
-  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  font-family: "Space Grotesk", monospace;
   background: rgba(31, 75, 255, 0.08);
-  border-radius: 10px;
-  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  padding: 8px 14px;
   width: fit-content;
+  user-select: all;
 }
 
+.copy-btn {
+  border: 1px solid rgba(31, 75, 255, 0.2);
+  background: rgba(31, 75, 255, 0.05);
+  color: var(--primary);
+  border-radius: var(--radius-sm);
+  padding: 6px 14px;
+  font-weight: 600;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+
+.copy-btn:hover {
+  background: rgba(31, 75, 255, 0.12);
+  transform: translateY(-1px);
+}
+
+/* ── Footer ── */
 .footer {
   text-align: center;
   color: var(--muted);
   font-size: 0.95rem;
 }
 
+/* ── WhatsApp FAB ── */
 .whatsapp-fab {
   position: fixed;
   right: 24px;
@@ -311,14 +438,14 @@ input:focus {
   align-items: center;
   gap: 10px;
   padding: 12px 16px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: #25d366;
   color: #ffffff;
   font-weight: 700;
   text-decoration: none;
   box-shadow: 0 18px 40px rgba(37, 211, 102, 0.35);
   z-index: 10;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform var(--transition), box-shadow var(--transition);
 }
 
 .whatsapp-fab:hover {
@@ -347,11 +474,17 @@ input:focus {
   font-size: 0.95rem;
 }
 
-[dir="rtl"] .whatsapp-fab {
+/* ── RTL-specific overrides ── */
+.app-rtl .whatsapp-fab {
   left: 24px;
   right: auto;
 }
 
+.app-rtl .hero-top {
+  flex-direction: row-reverse;
+}
+
+/* ── Animations ── */
 @keyframes float {
   0%,
   100% {
@@ -362,6 +495,18 @@ input:focus {
   }
 }
 
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Responsive ── */
 @media (max-width: 720px) {
   .card {
     padding: 24px;
@@ -377,5 +522,14 @@ input:focus {
 
   .hero-top {
     flex-direction: column;
+  }
+
+  .app-rtl .hero-top {
+    flex-direction: column;
+  }
+
+  .result-code-row {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
