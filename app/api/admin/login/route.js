@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createAdminSession, isAdminPasswordValid } from "../../../../lib/admin-auth.js";
+import { createAdminSession, isAdminPasswordValid } from "@/lib/admin-auth.js";
 
 export const runtime = "nodejs";
 
@@ -11,24 +11,28 @@ export async function POST(request) {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
   const password = (body?.password || "").trim();
+
+  // Verify password (still from env)
   if (!isAdminPasswordValid(password)) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 
-  let session;
+  let sessionId;
   try {
-    session = createAdminSession();
+    sessionId = await createAdminSession();
   } catch (error) {
-    return NextResponse.json({ error: error?.message || "Session error." }, { status: 500 });
+    console.error("Session creation failed:", error);
+    return NextResponse.json({ error: "Session error." }, { status: 500 });
   }
 
   const response = NextResponse.json({ ok: true });
-  response.cookies.set("admin_session", session, {
+  response.cookies.set("admin_session", sessionId, {
     httpOnly: true,
     sameSite: "lax",
     path: "/",
     secure: process.env.NODE_ENV === "production",
-    maxAge: 60 * 60 * 24
+    maxAge: 60 * 60 * 24 // Cookie age (should match session)
   });
+
   return response;
 }

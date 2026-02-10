@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 const MESSAGES = {
   en: {
+    badgeLabel: "Admin",
     title: "Admin Codes",
     subtitle: "Live list of recent codes for all recipients.",
     statusSearching: "Scanning inbox...",
@@ -11,9 +12,20 @@ const MESSAGES = {
     statusError: "Unable to reach the server.",
     statusUnauthorized: "Unauthorized. Check your password.",
     resultsTitle: "All Results",
-    emptyDefault: "No codes found in the lookback window."
+    checkedAtLabel: "Checked at",
+    emptyDefault: "No codes found in the lookback window.",
+    langLabel: "العربية",
+    adminPassword: "Admin password",
+    enterPassword: "Enter password",
+    unlock: "Unlock",
+    minutesAgo: (n) => `${n} minutes ago`,
+    unknownTime: "Unknown time",
+    unknownRecipient: "Unknown recipient",
+    copyBtn: "Copy",
+    copiedBtn: "Copied!",
   },
   ar: {
+    badgeLabel: "لوحة التحكم",
     title: "لوحة الأكواد",
     subtitle: "قائمة مباشرة بالرموز الحديثة لكل المستلمين.",
     statusSearching: "جارٍ فحص البريد...",
@@ -21,8 +33,18 @@ const MESSAGES = {
     statusError: "تعذر الاتصال بالخادم.",
     statusUnauthorized: "غير مصرح. تحقق من كلمة المرور.",
     resultsTitle: "كل النتائج",
-    emptyDefault: "لا توجد رموز ضمن المدة المحددة."
-  }
+    checkedAtLabel: "تم الفحص في",
+    emptyDefault: "لا توجد رموز ضمن المدة المحددة.",
+    langLabel: "English",
+    adminPassword: "كلمة مرور المسؤول",
+    enterPassword: "أدخل كلمة المرور",
+    unlock: "دخول",
+    minutesAgo: (n) => `منذ ${n} دقيقة`,
+    unknownTime: "وقت غير معروف",
+    unknownRecipient: "مستلم غير معروف",
+    copyBtn: "نسخ",
+    copiedBtn: "تم النسخ!",
+  },
 };
 
 function itemTimestamp(item) {
@@ -59,8 +81,10 @@ export default function AdminPage() {
   const [items, setItems] = useState([]);
   const [password, setPassword] = useState("");
   const [authorized, setAuthorized] = useState(false);
+  const [copiedIndex, setCopiedIndex] = useState(null);
   const currentLang = MESSAGES[lang] || MESSAGES.en;
-  const locale = lang === "ar" ? "ar" : "en";
+  const locale = lang === "ar" ? "ar-EG" : "en-US";
+  const isRTL = lang === "ar";
 
   const statusClass = useMemo(() => {
     if (!statusType) {
@@ -117,7 +141,12 @@ export default function AdminPage() {
       active = false;
       clearInterval(timer);
     };
-  }, [authorized, currentLang.statusError, currentLang.statusSearching, currentLang.statusWaiting]);
+  }, [
+    authorized,
+    currentLang.statusError,
+    currentLang.statusSearching,
+    currentLang.statusWaiting,
+  ]);
 
   function handleUnlock(event) {
     event.preventDefault();
@@ -129,9 +158,9 @@ export default function AdminPage() {
     fetch("/api/admin/login", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify({ password })
+      body: JSON.stringify({ password }),
     })
       .then((response) => {
         if (!response.ok) {
@@ -176,8 +205,18 @@ export default function AdminPage() {
     };
   }, [currentLang.statusWaiting]);
 
+  function handleCopy(code, index) {
+    navigator.clipboard.writeText(code).then(() => {
+      setCopiedIndex(index);
+      setTimeout(() => setCopiedIndex(null), 1500);
+    });
+  }
+
   return (
-    <div dir={lang === "ar" ? "rtl" : "ltr"}>
+    <div
+      className={isRTL ? "app-rtl" : "app-ltr"}
+      dir={isRTL ? "rtl" : "ltr"}
+    >
       <div className="ambient">
         <div className="halo"></div>
         <div className="ribbon"></div>
@@ -186,13 +225,14 @@ export default function AdminPage() {
       <main className="page">
         <header className="hero">
           <div className="hero-top">
-            <div className="badge">Admin</div>
+            <div className="badge">{currentLang.badgeLabel}</div>
             <button
               type="button"
               className="lang-toggle"
               onClick={() => setLang((prev) => (prev === "en" ? "ar" : "en"))}
             >
-              {lang === "ar" ? "English" : "العربية"}
+              <span className="lang-toggle-icon">🌐</span>
+              {currentLang.langLabel}
             </button>
           </div>
           <h1>{currentLang.title}</h1>
@@ -203,19 +243,19 @@ export default function AdminPage() {
           {!authorized ? (
             <form className="form" onSubmit={handleUnlock}>
               <label htmlFor="admin-password">
-                {lang === "ar" ? "كلمة مرور المسؤول" : "Admin password"}
+                {currentLang.adminPassword}
               </label>
               <input
                 id="admin-password"
                 name="admin-password"
                 type="password"
-                placeholder={lang === "ar" ? "أدخل كلمة المرور" : "Enter password"}
+                placeholder={currentLang.enterPassword}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 required
               />
               <button type="submit" className="primary-button">
-                {lang === "ar" ? "دخول" : "Unlock"}
+                {currentLang.unlock}
               </button>
               <div className={statusClass}>{status}</div>
             </form>
@@ -228,32 +268,49 @@ export default function AdminPage() {
               <span>{currentLang.resultsTitle}</span>
               <span>
                 {checkedAt
-                  ? `${lang === "ar" ? "تم الفحص في" : "Checked at"} ${new Date(
-                      checkedAt
-                    ).toLocaleTimeString(locale)}`
+                  ? `${currentLang.checkedAtLabel} ${new Date(
+                    checkedAt
+                  ).toLocaleTimeString(locale)}`
                   : ""}
               </span>
             </div>
             <div className="result-content">
               {items.length === 0 ? (
-                <div>{currentLang.emptyDefault}</div>
+                <div className="empty-state">
+                  <span className="empty-icon">📬</span>
+                  <span>{currentLang.emptyDefault}</span>
+                </div>
               ) : (
                 <div className="result-list">
                   {items.map((item, index) => (
                     <div className="result-row" key={`${item.code}-${index}`}>
                       <div className="result-meta">
-                        {item.time ? (
-                          <span title={new Date(item.time).toLocaleString(locale)}>
-                            {lang === "ar"
-                              ? `منذ ${minutesAgo(item.time) ?? 0} دقيقة`
-                              : `${minutesAgo(item.time) ?? 0} minutes ago`}
-                          </span>
-                        ) : (
-                          <span>{lang === "ar" ? "وقت غير معروف" : "Unknown time"}</span>
-                        )}{" "}
-                        | {item.to || (lang === "ar" ? "مستلم غير معروف" : "Unknown recipient")}
+                        <span className="result-meta-time">
+                          {item.time
+                            ? currentLang.minutesAgo(
+                              minutesAgo(item.time) ?? 0
+                            )
+                            : currentLang.unknownTime}
+                        </span>
+                        <span className="result-meta-divider">|</span>
+                        <span className="result-meta-sender">
+                          {item.to || currentLang.unknownRecipient}
+                        </span>
                       </div>
-                      <div className="result-code">{item.code}</div>
+                      <div className="result-code-row">
+                        <div className="result-code" dir="ltr">
+                          {item.code}
+                        </div>
+                        <button
+                          type="button"
+                          className="copy-btn"
+                          onClick={() => handleCopy(item.code, index)}
+                        >
+                          {copiedIndex === index
+                            ? currentLang.copiedBtn
+                            : currentLang.copyBtn}
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>

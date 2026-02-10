@@ -1,0 +1,16 @@
+version: '3'
+
+services:
+  app:
+    build: .
+    container_name: code-receive
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=file:/app/data/dev.db
+      # Add other env vars here or use an env_file
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
